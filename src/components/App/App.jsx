@@ -1,12 +1,14 @@
 import MovieService from '../services/MovieService'
 
 import { Card, Flex, List, App as Page, Space, Tag, Typography } from 'antd'
+import { format } from 'date-fns'
+import parseISO from 'date-fns/parseISO'
 
 const data = new MovieService()
 const movies = await data.getAllFilms()
 
 const cardStyle = {
-  maxWidth: 450,
+  width: 450,
   border: 'none',
   borderRadius: 0,
   boxShadow: '0px 4px 12px 0px rgba(0, 0, 0, 0.15)',
@@ -26,6 +28,12 @@ function App() {
         renderItem={(movie) => {
           const { title, poster_path: posterPath, release_date: releaseDate, overview } = movie
 
+          let date = null
+
+          if (releaseDate) {
+            date = format(parseISO(releaseDate), 'MMMM d, y')
+          }
+
           return (
             <List.Item>
               <Card
@@ -36,11 +44,7 @@ function App() {
                 }}
               >
                 <Flex>
-                  <img
-                    alt="poster"
-                    src={`https://www.themoviedb.org/t/p/w600_and_h900_bestv2${posterPath}`}
-                    style={imgStyle}
-                  />
+                  <img alt="poster" src={`https://image.tmdb.org/t/p/original${posterPath}`} style={imgStyle} />
 
                   <Flex
                     vertical
@@ -53,7 +57,7 @@ function App() {
                       {title}
                     </Typography.Title>
                     <Typography.Paragraph level={5} type="secondary" style={{ margin: 0 }}>
-                      {releaseDate}
+                      {date}
                     </Typography.Paragraph>
 
                     <Space size="8">
