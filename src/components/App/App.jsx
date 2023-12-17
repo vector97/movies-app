@@ -25,57 +25,61 @@ function App() {
       <List
         grid={{ gutter: 36, xs: 1, sm: 2 }}
         dataSource={movies}
-        renderItem={(movie) => {
-          const { title, poster_path: posterPath, release_date: releaseDate, overview } = movie
-
-          let date = null
-
-          if (releaseDate) {
-            date = format(parseISO(releaseDate), 'MMMM d, y')
-          }
-
-          return (
-            <List.Item>
-              <Card
-                style={cardStyle}
-                bodyStyle={{
-                  padding: 0,
-                  overflow: 'hidden',
-                }}
-              >
-                <Flex>
-                  <img alt="poster" src={`https://image.tmdb.org/t/p/original${posterPath}`} style={imgStyle} />
-
-                  <Flex
-                    vertical
-                    gap={7}
-                    style={{
-                      padding: 20,
-                    }}
-                  >
-                    <Typography.Title level={3} style={{ margin: 0 }}>
-                      {title}
-                    </Typography.Title>
-                    <Typography.Paragraph level={5} type="secondary" style={{ margin: 0 }}>
-                      {date}
-                    </Typography.Paragraph>
-
-                    <Space size="8">
-                      <Tag>Action</Tag>
-                      <Tag>Drama</Tag>
-                    </Space>
-
-                    <Typography.Paragraph ellipsis={{ rows: 6, width: 10 }} style={{ margin: 0 }}>
-                      {overview}
-                    </Typography.Paragraph>
-                  </Flex>
-                </Flex>
-              </Card>
-            </List.Item>
-          )
-        }}
+        renderItem={(movie) => (
+          <List.Item>
+            <Film movie={movie} />
+          </List.Item>
+        )}
       />
     </Page>
+  )
+}
+
+function Film({ movie }) {
+  const { title, poster_path: posterPath, release_date: releaseDate, overview } = movie
+
+  let date = null
+
+  if (releaseDate) {
+    date = format(parseISO(releaseDate), 'MMMM d, y')
+  }
+
+  return (
+    <Card
+      style={cardStyle}
+      bodyStyle={{
+        padding: 0,
+        overflow: 'hidden',
+      }}
+    >
+      <Flex>
+        <img alt="poster" src={`https://image.tmdb.org/t/p/original${posterPath}`} style={imgStyle} />
+
+        <Flex
+          vertical
+          gap={7}
+          style={{
+            padding: 20,
+          }}
+        >
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            {title}
+          </Typography.Title>
+          <Typography.Paragraph level={5} type="secondary" style={{ margin: 0 }}>
+            {date}
+          </Typography.Paragraph>
+
+          <Space size="8">
+            <Tag>Action</Tag>
+            <Tag>Drama</Tag>
+          </Space>
+
+          <Typography.Paragraph ellipsis={{ rows: 6, width: 10 }} style={{ margin: 0 }}>
+            {overview}
+          </Typography.Paragraph>
+        </Flex>
+      </Flex>
+    </Card>
   )
 }
 
