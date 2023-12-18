@@ -1,3 +1,6 @@
+import { format } from 'date-fns'
+import parseISO from 'date-fns/parseISO'
+
 class MovieService {
   _apiBase = 'https://api.themoviedb.org/3/search/movie'
 
@@ -15,15 +18,29 @@ class MovieService {
 
     if (!response.ok) throw new Error(`Could not fetch ${this._apiBase}, received ${response.status}`)
 
-    const data = await response.json()
-
-    return data
+    return response.json()
   }
 
   async getAllFilms() {
     const films = await this.getResources()
 
-    return films.results
+    return films.results.map(this._transformMovie)
+  }
+
+  _transformMovie(movie) {
+    const { release_date: releaseDate } = movie
+    let date = null
+
+    if (releaseDate) {
+      date = format(parseISO(releaseDate), 'MMMM d, y')
+    }
+
+    return {
+      title: movie.title,
+      posterPath: movie.poster_path,
+      date,
+      overview: movie.overview,
+    }
   }
 }
 

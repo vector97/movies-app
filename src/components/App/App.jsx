@@ -1,11 +1,7 @@
-import MovieService from '../services/MovieService'
+import MovieService from '../../services/MovieService'
 
-import { Card, Flex, List, App as Page, Space, Tag, Typography } from 'antd'
-import { format } from 'date-fns'
-import parseISO from 'date-fns/parseISO'
-
-const data = new MovieService()
-const movies = await data.getAllFilms()
+import { Card, Flex, List, App as Page, Space, Spin, Tag, Typography } from 'antd'
+import { Component } from 'react'
 
 const cardStyle = {
   width: 450,
@@ -19,30 +15,66 @@ const imgStyle = {
   width: 183,
 }
 
-function App() {
+class App extends Component {
+  movieService = new MovieService()
+
+  state = {
+    movies: [],
+    isLoading: true,
+    isError: false,
+  }
+
+  componentDidMount() {
+    this.loadMovies()
+  }
+
+  onMoviesLoaded = (movies) => {
+    this.setState({ movies, isLoading: false })
+  }
+
+  onError = () => {
+    this.setState({ isLoading: false, isError: true })
+  }
+
+  loadMovies() {
+    this.movieService.getAllFilms().then(this.onMoviesLoaded).catch(this.onError)
+  }
+
+  render() {
+    const { movies, isLoading, isError } = this.state
+
+    const hasData = !(isLoading || isError)
+
+    const error = isError ? <>Error</> : null
+    const loading = isLoading ? <Spin /> : null
+    const content = hasData ? <ListView movies={movies} /> : null
+
+    return (
+      <Page style={{ maxWidth: '1010px', margin: '0 auto' }}>
+        {error}
+        {loading}
+        {content}
+      </Page>
+    )
+  }
+}
+
+function ListView({ movies }) {
   return (
-    <Page style={{ maxWidth: '1010px', margin: '0 auto' }}>
-      <List
-        grid={{ gutter: 36, xs: 1, sm: 2 }}
-        dataSource={movies}
-        renderItem={(movie) => (
-          <List.Item>
-            <Film movie={movie} />
-          </List.Item>
-        )}
-      />
-    </Page>
+    <List
+      grid={{ gutter: 36, xs: 1, sm: 2 }}
+      dataSource={movies}
+      renderItem={(movie) => (
+        <List.Item>
+          <Film movie={movie} />
+        </List.Item>
+      )}
+    />
   )
 }
 
 function Film({ movie }) {
-  const { title, poster_path: posterPath, release_date: releaseDate, overview } = movie
-
-  let date = null
-
-  if (releaseDate) {
-    date = format(parseISO(releaseDate), 'MMMM d, y')
-  }
+  const { title, posterPath, date, overview } = movie
 
   return (
     <Card
