@@ -1,4 +1,5 @@
 import MovieService from '../../services/MovieService'
+import Error from '../Error'
 import ListView from '../ListView'
 
 import { App as Page, Spin } from 'antd'
@@ -11,6 +12,7 @@ class App extends Component {
     movies: [],
     isLoading: true,
     isError: false,
+    error: null,
   }
 
   componentDidMount() {
@@ -21,8 +23,8 @@ class App extends Component {
     this.setState({ movies, isLoading: false })
   }
 
-  onError = () => {
-    this.setState({ isLoading: false, isError: true })
+  onError = (e) => {
+    this.setState({ isLoading: false, isError: true, error: e })
   }
 
   loadMovies() {
@@ -30,17 +32,17 @@ class App extends Component {
   }
 
   render() {
-    const { movies, isLoading, isError } = this.state
+    const { movies, isLoading, isError, error } = this.state
 
     const hasData = !(isLoading || isError)
 
-    const error = isError ? <>Error</> : null
+    const errorMessage = isError ? <Error error={error} /> : null
     const loading = isLoading ? <Spin /> : null
     const content = hasData ? <ListView movies={movies} /> : null
 
     return (
       <Page style={{ maxWidth: '1010px', margin: '0 auto' }}>
-        {error}
+        {errorMessage}
         {loading}
         {content}
       </Page>
