@@ -28,18 +28,22 @@ class MovieService {
   }
 
   _transformMovie(movie) {
-    const { release_date: releaseDate } = movie
-    let date = null
+    const { title, overview } = movie
+    let { poster_path: posterPath, release_date: releaseDate } = movie
 
     if (releaseDate) {
-      date = format(parseISO(releaseDate), 'MMMM d, y')
+      releaseDate = format(parseISO(releaseDate), 'MMMM d, y')
+    }
+
+    if (!posterPath) {
+      posterPath = '/v4F270SLg2HM89XzHV4i7o1UXyt.jpg'
     }
 
     return {
-      title: movie.title,
-      posterPath: movie.poster_path,
-      date,
-      overview: movie.overview,
+      title,
+      posterPath,
+      releaseDate,
+      overview,
     }
   }
 }
