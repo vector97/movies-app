@@ -10,6 +10,7 @@ root.render(
     <Online>
       <App />
     </Online>
+
     <Offline>
       <Error error={{ message: 'Internet Disconnected' }} />
     </Offline>
