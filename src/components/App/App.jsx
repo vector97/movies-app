@@ -59,9 +59,11 @@ class App extends Component {
   }
 
   authentication() {
-    this.movieService.createGuestSession().then((data) => {
-      this.setState({ guestSessionID: data.guest_session_id })
-    })
+    // eslint-disable-next-line no-unused-expressions
+    localStorage.getItem('guestID') ||
+      this.movieService.createGuestSession().then((data) => {
+        this.setState({ guestSessionID: data })
+      })
   }
 
   loadMovies(search = 'return', page = 1) {

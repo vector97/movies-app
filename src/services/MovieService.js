@@ -6,103 +6,130 @@ class MovieService {
 
   _apiKey = 'b82f9d026c716e7c9a273521a2b7de4e'
 
-  async createGuestSession() {
-    const options = {
-      method: 'GET',
-      headers: {
-        accept: 'application/json',
-        Authorization:
-          'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiODJmOWQwMjZjNzE2ZTdjOWEyNzM1MjFhMmI3ZGU0ZSIsInN1YiI6IjYxYjBhYzI4OTk3OWQyMDA2MTg1NjZhMyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.JA21j5_godqHvLHyrTMIsHBZRak37XIQrsQ_WY_CkTk',
-      },
+  async getResources(url) {
+    try {
+      const res = await fetch(`${this._apiBase}${url}`)
+
+      if (!res.ok) throw new Error(`Could not fetch ${this._apiBase}, received ${res.status}`)
+
+      const data = await res.json()
+
+      console.log('data', data)
+
+      return data
+    } catch (err) {
+      return err.message
     }
-
-    const response = await fetch(`${this._apiBase}/authentication/guest_session/new`, options)
-
-    if (!response.ok) throw new Error(`Could not authenticate, received ${response.status}`)
-
-    return response.json()
   }
 
-  async getResources(search, page = 1) {
-    const options = {
-      method: 'GET',
-      headers: {
-        accept: 'application/json',
-        Authorization:
-          'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiODJmOWQwMjZjNzE2ZTdjOWEyNzM1MjFhMmI3ZGU0ZSIsInN1YiI6IjYxYjBhYzI4OTk3OWQyMDA2MTg1NjZhMyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.JA21j5_godqHvLHyrTMIsHBZRak37XIQrsQ_WY_CkTk',
-      },
-    }
+  async createGuestSession() {
+    const data = await this.getResources(`/authentication/guest_session/new?api_key=${this._apiKey}`)
 
-    const response = await fetch(
-      `${this._apiBase}/search/movie?query=${search}&include_adult=false&language=en-US&page=${page}`,
-      options
+    const { guest_session_id: guestID } = data
+
+    localStorage.setItem('guestID', guestID)
+
+    // todo удалить return
+    return guestID
+  }
+
+  async getMovieGenresList() {
+    const data = await this.getResources(`/genre/movie/list?api_key=${this._apiKey}&language=en-US`)
+
+    const genresList = data.genres.map((genre) => [genre.id, genre.name])
+
+    return genresList
+  }
+
+  async getAllMovies(searchValue, page = 1) {
+    const movies = await this.getResources(
+      `/search/movie?api_key=${this._apiKey}&language=en-US&query=${searchValue}&page=${page}`
     )
 
-    if (!response.ok) throw new Error(`Could not fetch ${this._apiBase}, received ${response.status}`)
-
-    return response.json()
+    return {
+      currentPage: movies.page,
+      movies: movies.results.map(this._transformMovie),
+      totalPages: movies.total_pages,
+      totalMovies: movies.total_results,
+    }
   }
 
-  async getAllMovies(search, page) {
-    const movies = await this.getResources(search, page)
+  async getRatedMovies(page = 1) {
+    const guestID = this.getLocalGuestID()
 
-    return { movies: movies.results.map(this._transformMovie), length: movies.total_results }
+    const movies = await this.getResources(
+      `/guest_session/${guestID}/rated/movies?api_key=${this._apiKey}&page=${page}`
+    )
+
+    return {
+      currentPage: movies.page,
+      movies: movies.results.map(this._transformMovie),
+      totalPages: movies.total_pages,
+      totalMovies: movies.total_results,
+    }
   }
 
-  async addRating(movieID, guestSessionID, ratingValue) {
+  async postRatedMovie(id, rating) {
+    const guestID = this.getLocalGuestID()
+
     const options = {
       method: 'POST',
       headers: {
         accept: 'application/json',
         'Content-Type': 'application/json;charset=utf-8',
       },
-      body: `{"value":${ratingValue}}`,
+      body: JSON.stringify({
+        value: rating,
+      }),
     }
 
-    const response = await fetch(
-      `${this._apiBase}/movie/${movieID}/rating?api_key=${this._apiKey}&guest_session_id=${guestSessionID}`,
+    console.log('post rating', id, rating)
+
+    await fetch(
+      `${this._apiBase}/movie/${id}/rating?api_key=${this._apiKey}&guest_session_id=${guestID}`,
       options
-    )
-    return response.json()
+    ).catch((err) => err.message)
   }
 
-  async getRatedMovies(guestSessionID, pageNum = 1) {
+  async deleteRatedMovie(id) {
+    const guestID = this.getLocalGuestID()
+
     const options = {
-      method: 'GET',
+      method: 'DELETE',
       headers: {
         accept: 'application/json',
-      },
-    }
-    const response = await fetch(
-      `${this._apiBase}/guest_session/${guestSessionID}/rated/movies?api_key=${this._apiKey}&language=en-US&page=${pageNum}&sort_by=created_at.asc`,
-      options
-    )
-
-    if (!response.ok) throw new Error(`Could not fetch, received ${response.status}`)
-
-    const movies = await response.json()
-
-    return { movies: movies.results.map(this._transformMovie), length: movies.total_results }
-  }
-
-  async getMovieGenresList() {
-    const options = {
-      method: 'GET',
-      headers: {
-        accept: 'application/json',
-        Authorization:
-          'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiODJmOWQwMjZjNzE2ZTdjOWEyNzM1MjFhMmI3ZGU0ZSIsInN1YiI6IjYxYjBhYzI4OTk3OWQyMDA2MTg1NjZhMyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.JA21j5_godqHvLHyrTMIsHBZRak37XIQrsQ_WY_CkTk',
+        'Content-Type': 'application/json;charset=utf-8',
       },
     }
 
-    const response = await fetch('https://api.themoviedb.org/3/genre/movie/list?language=en', options)
-    const { genres } = await response.json()
+    console.log('delete rating', id)
 
-    return genres
+    await fetch(
+      `${this._apiBase}/movie/${id}/rating?api_key=${this._apiKey}&guest_session_id=${guestID}`,
+      options
+    ).catch((err) => err.message)
+  }
+
+  getLocalGuestID() {
+    console.log('getLocalGuestID: ', localStorage.getItem('guestID'))
+
+    return localStorage.getItem('guestID')
+  }
+
+  setLocalRating(id, rating) {
+    console.log('setLocalRating: ', id, rating)
+
+    localStorage.setItem(id, rating)
+  }
+
+  getLocalRating(id) {
+    console.log('getLocalRating: ', id)
+
+    return +localStorage.getItem(id)
   }
 
   _transformMovie(movie) {
-    const { id, title, overview, rating, genre_ids: genresIDs } = movie
+    const { id, title, overview, genre_ids: genresID } = movie
     let { poster_path: posterPath, release_date: releaseDate, vote_average: voteAverage } = movie
 
     if (releaseDate) {
@@ -119,13 +146,12 @@ class MovieService {
 
     return {
       id,
-      genresIDs,
       title,
+      genresID,
       posterPath,
       releaseDate,
       overview,
-      voteAverage,
-      rating,
+      voteAverage: voteAverage || 0,
     }
   }
 }
