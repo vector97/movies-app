@@ -14,8 +14,6 @@ class MovieService {
 
       const data = await res.json()
 
-      console.log('data', data)
-
       return data
     } catch (err) {
       return err.message
@@ -28,9 +26,6 @@ class MovieService {
     const { guest_session_id: guestID } = data
 
     localStorage.setItem('guestID', guestID)
-
-    // todo удалить return
-    return guestID
   }
 
   async getMovieGenresList() {
@@ -83,8 +78,6 @@ class MovieService {
       }),
     }
 
-    console.log('post rating', id, rating)
-
     await fetch(
       `${this._apiBase}/movie/${id}/rating?api_key=${this._apiKey}&guest_session_id=${guestID}`,
       options
@@ -102,8 +95,6 @@ class MovieService {
       },
     }
 
-    console.log('delete rating', id)
-
     await fetch(
       `${this._apiBase}/movie/${id}/rating?api_key=${this._apiKey}&guest_session_id=${guestID}`,
       options
@@ -111,25 +102,19 @@ class MovieService {
   }
 
   getLocalGuestID() {
-    console.log('getLocalGuestID: ', localStorage.getItem('guestID'))
-
     return localStorage.getItem('guestID')
   }
 
   setLocalRating(id, rating) {
-    console.log('setLocalRating: ', id, rating)
-
     localStorage.setItem(id, rating)
   }
 
   getLocalRating(id) {
-    console.log('getLocalRating: ', id)
-
     return +localStorage.getItem(id)
   }
 
   _transformMovie(movie) {
-    const { id, title, overview, genre_ids: genresID } = movie
+    const { id, title, overview, genre_ids: genresID, rating } = movie
     let { poster_path: posterPath, release_date: releaseDate, vote_average: voteAverage } = movie
 
     if (releaseDate) {
@@ -152,6 +137,7 @@ class MovieService {
       releaseDate,
       overview,
       voteAverage: voteAverage || 0,
+      rating: rating || 0,
     }
   }
 }

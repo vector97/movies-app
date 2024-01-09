@@ -1,5 +1,4 @@
-import MovieService from '../../services/MovieService'
-import { MovieServiceConsumer } from '../MovieServiceContext'
+import { MovieServiceConsumer } from '../../contexts/MovieServiceContext'
 
 import { Card, Flex, Rate, Space, Tag, Typography } from 'antd'
 import { Component } from 'react'
@@ -19,17 +18,18 @@ const imgStyle = {
 }
 
 class Movie extends Component {
-  movieService = new MovieService()
-
   state = {
     rateColor: '#E90000',
+    rating: 0,
   }
 
   componentDidMount() {
     const {
-      movie: { voteAverage, rating },
+      movie: { voteAverage, id },
+      getLocalRating,
     } = this.props
 
+    const rating = getLocalRating(id)
     this.setState({ rating })
 
     if (voteAverage >= 3 && voteAverage < 5) {
@@ -43,25 +43,25 @@ class Movie extends Component {
 
   onChangeHandler = (value) => {
     const {
-      guestSessionID,
       movie: { id },
+      onRateChange,
     } = this.props
 
     this.setState({ rating: value })
-    this.movieService.addRating(id, guestSessionID, value)
+    onRateChange(id, value)
   }
 
   render() {
     const {
-      movie: { title, posterPath, releaseDate, overview, voteAverage, genresIDs },
+      movie: { title, posterPath, releaseDate, overview, voteAverage, genresID },
     } = this.props
     const { rating, rateColor } = this.state
 
     return (
       <MovieServiceConsumer>
-        {(genres) => {
-          const genresList = genres.map(({ id, name }) => genresIDs.includes(id) && name).filter(Boolean)
-          const tags = genresList.map((genre) => <Tag key={genre}>{genre}</Tag>)
+        {(genresList) => {
+          const genres = genresList.map(({ id, name }) => genresID.includes(id) && name).filter(Boolean)
+          const tags = genres.map((genre) => <Tag key={genre}>{genre}</Tag>)
 
           return (
             <Card

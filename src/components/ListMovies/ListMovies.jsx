@@ -5,13 +5,13 @@ import { Component } from 'react'
 
 class ListMovies extends Component {
   onChange = (page) => {
-    const { pagination, searchValue } = this.props
+    const { pagination } = this.props
 
-    pagination(searchValue, page)
+    pagination(page)
   }
 
   render() {
-    const { length, movies, currentPage, guestSessionID } = this.props
+    const { totalMovies, movies, currentPage, onRateChange, getLocalRating } = this.props
 
     return (
       <List
@@ -20,14 +20,15 @@ class ListMovies extends Component {
           current: currentPage,
           align: 'center',
           defaultPageSize: 20,
-          total: length,
+          total: totalMovies,
           showSizeChanger: false,
+          hideOnSinglePage: true,
           onChange: this.onChange,
         }}
         dataSource={movies}
         renderItem={(movie) => (
           <List.Item>
-            <Movie movie={movie} guestSessionID={guestSessionID} />
+            <Movie movie={movie} onRateChange={onRateChange} getLocalRating={getLocalRating} />
           </List.Item>
         )}
       />
