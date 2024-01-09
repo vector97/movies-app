@@ -1,19 +1,15 @@
 import { Input } from 'antd'
-import { Component, createRef } from 'react'
+import { Component } from 'react'
 
 class SearchPanel extends Component {
   state = {
     searchValue: '',
   }
 
-  constructor(props) {
-    super(props)
-
-    this.searchInput = createRef()
-  }
-
   componentDidMount() {
-    this.searchInput.current.focus()
+    const { searchValue } = this.props
+
+    this.setState({ searchValue })
   }
 
   onChangeHandler = ({ target }) => {
@@ -31,10 +27,10 @@ class SearchPanel extends Component {
       <Input
         value={searchValue}
         onChange={this.onChangeHandler}
-        ref={this.searchInput}
         type="search"
         placeholder="Type to search..."
         style={{ marginBottom: '32px' }}
+        autoFocus
       />
     )
   }

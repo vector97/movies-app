@@ -1,25 +1,29 @@
+import { MovieServiceProvider } from '../../contexts/MovieServiceContext'
 import MovieService from '../../services/MovieService'
 import Error from '../Error'
 import ListMovies from '../ListMovies'
-import { MovieServiceProvider } from '../MovieServiceContext'
 import SearchPanel from '../SearchPanel'
-import TabsPanel from '../TabsPanel'
 
-import { App as Page, Spin } from 'antd'
+import { App as Page, Spin, Tabs } from 'antd'
 import { debounce } from 'lodash'
 import { Component } from 'react'
+import { Offline } from 'react-detect-offline'
 
 class App extends Component {
   movieService = new MovieService()
 
   state = {
+    searchValue: '',
+    genresList: [],
     movies: [],
-    length: null,
+    totalMovies: 0,
+    currentPage: 1,
     isLoading: false,
     isError: false,
     error: null,
-    searchValue: '',
-    currentPage: 1,
+    moviesRated: [],
+    totalMoviesRated: 0,
+    currentPageRated: 1,
   }
 
   searchInputHandler = debounce((value) => {
@@ -29,48 +33,86 @@ class App extends Component {
 
   componentDidMount() {
     this.authentication()
-    this.movieService.getMovieGenresList().then((genres) => this.setState({ genres }))
+    this.movieService.getMovieGenresList().then((genresList) => this.setState({ genresList }))
   }
 
-  onMoviesLoaded = ({ movies, length }) => {
-    this.setState({ movies, length, isLoading: false })
+  onMoviesLoaded = ({ movies, totalMovies }) => {
+    this.setState({ movies, totalMovies, isLoading: false })
+  }
+
+  onRatedMoviesLoaded = ({ movies, totalMovies }) => {
+    this.setState({ moviesRated: movies, totalMoviesRated: totalMovies, isLoading: false })
   }
 
   onError = (e) => {
     this.setState({ isLoading: false, isError: true, error: e })
   }
 
-  pagination = (searchValue, page) => {
+  onRateChange = async (id, rating) => {
+    if (rating > 0) {
+      await this.movieService.postRatedMovie(id, rating)
+      this.movieService.setLocalRating(id, rating)
+    } else {
+      await this.movieService.deleteRatedMovie(id)
+      localStorage.removeItem(id)
+    }
+  }
+
+  onTabsChange = (key) => {
+    if (key === '1') {
+      const { searchValue, currentPage } = this.state
+
+      this.loadMovies(searchValue, currentPage)
+    } else if (key === '2') {
+      const { currentPageRated } = this.state
+
+      this.loadRatedMovies(currentPageRated)
+    }
+  }
+
+  pagination = (page) => {
+    const { searchValue } = this.state
+
     this.setState({ currentPage: page })
     this.loadMovies(searchValue, page)
   }
 
-  loadRatedMovies = (tab) => {
-    if (tab === 'Rated') {
-      const { guestSessionID } = this.state
+  paginationRated = (page) => {
+    this.setState({ currentPageRated: page })
+    this.loadRatedMovies(page)
+  }
 
-      this.setState({ isLoading: true })
-      this.movieService.getRatedMovies(guestSessionID).then(this.onMoviesLoaded).catch(this.onError)
-    } else if (tab === 'Search') {
-      const { searchValue } = this.state
+  loadRatedMovies = (page) => {
+    this.setState({ isLoading: true, isError: false, error: null })
+    this.movieService.getRatedMovies(page).then(this.onRatedMoviesLoaded).catch(this.onError)
+  }
 
-      this.loadMovies(searchValue)
-    }
+  loadMovies(searchValue, page) {
+    this.setState({ isLoading: true, isError: false, error: null })
+    this.movieService.getAllMovies(searchValue, page).then(this.onMoviesLoaded).catch(this.onError)
   }
 
   authentication() {
-    this.movieService.createGuestSession().then((data) => {
-      this.setState({ guestSessionID: data.guest_session_id })
-    })
-  }
+    const guestID = localStorage.getItem('guestID') || this.movieService.createGuestSession()
 
-  loadMovies(search = 'return', page = 1) {
-    this.setState({ isLoading: true })
-    this.movieService.getAllMovies(search, page).then(this.onMoviesLoaded).catch(this.onError)
+    return guestID
   }
 
   render() {
-    const { movies, searchValue, currentPage, length, isLoading, isError, error, guestSessionID, genres } = this.state
+    const {
+      movies,
+      searchValue,
+      currentPage,
+      totalMovies,
+      isLoading,
+      isError,
+      error,
+      genresList,
+      moviesRated,
+      totalMoviesRated,
+      currentPageRated,
+    } = this.state
+
     const conditions = {
       hasData: !(isLoading || isError),
       hasError: isError,
@@ -80,15 +122,16 @@ class App extends Component {
 
     const searchPage = (
       <>
-        <SearchPanel searchInputHandler={this.searchInputHandler} />
+        <SearchPanel searchValue={searchValue} searchInputHandler={this.searchInputHandler} />
         {conditions.hasData && (
           <ListMovies
             movies={movies}
-            length={length}
+            totalMovies={totalMovies}
             pagination={this.pagination}
             searchValue={searchValue}
             currentPage={currentPage}
-            guestSessionID={guestSessionID}
+            onRateChange={this.onRateChange}
+            getLocalRating={this.movieService.getLocalRating}
           />
         )}
       </>
@@ -96,21 +139,38 @@ class App extends Component {
 
     const ratedPage = conditions.hasData && (
       <ListMovies
-        movies={movies}
-        length={length}
-        pagination={this.pagination}
+        movies={moviesRated}
+        totalMovies={totalMoviesRated}
+        pagination={this.paginationRated}
         searchValue={searchValue}
-        currentPage={currentPage}
-        guestSessionID={guestSessionID}
+        currentPage={currentPageRated}
+        onRateChange={this.onRateChange}
+        getLocalRating={this.movieService.getLocalRating}
       />
     )
 
-    const pages = [searchPage, ratedPage]
+    const items = [
+      {
+        key: '1',
+        label: 'Search',
+        children: searchPage,
+      },
+      {
+        key: '2',
+        label: 'Rated',
+        children: ratedPage,
+      },
+    ]
 
     return (
-      <MovieServiceProvider value={genres}>
+      <MovieServiceProvider value={genresList}>
         <Page style={{ maxWidth: '1010px', margin: '0 auto' }}>
-          <TabsPanel pages={pages} loadRatedMovies={this.loadRatedMovies} />
+          <Offline>
+            <Error error={{ message: 'Internet Disconnected' }} />
+          </Offline>
+
+          <Tabs defaultActiveKey="1" centered destroyInactiveTabPane items={items} onChange={this.onTabsChange} />
+
           {conditions.inProgress && <Spin />}
           {conditions.hasError && <Error error={error} />}
           {conditions.empty && <Error error={{ message: 'Нет фильмов по вашему запросу' }} />}
