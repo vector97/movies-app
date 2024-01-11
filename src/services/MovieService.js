@@ -36,7 +36,7 @@ class MovieService {
     return genresList
   }
 
-  async getAllMovies(searchValue, page = 1) {
+  async getMovies(searchValue, page = 1) {
     const movies = await this.getResources(
       `/search/movie?api_key=${this._apiKey}&language=en-US&query=${searchValue}&page=${page}`
     )
@@ -62,6 +62,23 @@ class MovieService {
       totalPages: movies.total_pages,
       totalMovies: movies.total_results,
     }
+  }
+
+  async getAllRatedMovies() {
+    let counter = 1
+    let pages = 1
+    const allRatedMovies = []
+
+    do {
+      // eslint-disable-next-line no-await-in-loop
+      const { movies, totalPages } = await this.getRatedMovies(counter)
+      pages = totalPages
+      allRatedMovies.push(...movies)
+
+      counter += 1
+    } while (counter <= pages)
+
+    return allRatedMovies
   }
 
   async postRatedMovie(id, rating) {
@@ -103,14 +120,6 @@ class MovieService {
 
   getLocalGuestID() {
     return localStorage.getItem('guestID')
-  }
-
-  setLocalRating(id, rating) {
-    localStorage.setItem(id, rating)
-  }
-
-  getLocalRating(id) {
-    return +localStorage.getItem(id)
   }
 
   _transformMovie(movie) {

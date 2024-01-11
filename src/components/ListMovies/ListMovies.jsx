@@ -11,7 +11,7 @@ class ListMovies extends Component {
   }
 
   render() {
-    const { totalMovies, movies, currentPage, onRateChange, getLocalRating } = this.props
+    const { totalMovies, movies, allRatedMovies, currentPage, onRateChange } = this.props
 
     return (
       <List
@@ -28,7 +28,7 @@ class ListMovies extends Component {
         dataSource={movies}
         renderItem={(movie) => (
           <List.Item>
-            <Movie movie={movie} onRateChange={onRateChange} getLocalRating={getLocalRating} />
+            <Movie movie={movie} allRatedMovies={allRatedMovies} onRateChange={onRateChange} />
           </List.Item>
         )}
       />

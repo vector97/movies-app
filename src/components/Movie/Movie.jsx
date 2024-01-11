@@ -26,11 +26,11 @@ class Movie extends Component {
   componentDidMount() {
     const {
       movie: { voteAverage, id },
-      getLocalRating,
+      allRatedMovies,
     } = this.props
 
-    const rating = getLocalRating(id)
-    this.setState({ rating })
+    const currentRatedMovie = allRatedMovies.find((movie) => movie.id === id)
+    this.setState({ rating: currentRatedMovie?.rating })
 
     if (voteAverage >= 3 && voteAverage < 5) {
       this.setState({ rateColor: '#E97E00' })
@@ -60,7 +60,7 @@ class Movie extends Component {
     return (
       <MovieServiceConsumer>
         {(genresList) => {
-          const genres = genresList.map(({ id, name }) => genresID.includes(id) && name).filter(Boolean)
+          const genres = genresList.map(([id, name]) => genresID.includes(id) && name).filter(Boolean)
           const tags = genres.map((genre) => <Tag key={genre}>{genre}</Tag>)
 
           return (

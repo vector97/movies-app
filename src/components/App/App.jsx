@@ -24,6 +24,7 @@ class App extends Component {
     moviesRated: [],
     totalMoviesRated: 0,
     currentPageRated: 1,
+    allRatedMovies: [],
   }
 
   searchInputHandler = debounce((value) => {
@@ -31,9 +32,10 @@ class App extends Component {
     this.loadMovies(value)
   }, 500)
 
-  componentDidMount() {
-    this.authentication()
-    this.movieService.getMovieGenresList().then((genresList) => this.setState({ genresList }))
+  async componentDidMount() {
+    await this.authentication()
+    this.loadMovieGenresList()
+    this.loadAllRatedMovies()
   }
 
   onMoviesLoaded = ({ movies, totalMovies }) => {
@@ -50,12 +52,11 @@ class App extends Component {
 
   onRateChange = async (id, rating) => {
     if (rating > 0) {
-      await this.movieService.postRatedMovie(id, rating)
-      this.movieService.setLocalRating(id, rating)
+      await this.movieService.postRatedMovie(id, rating).catch(this.onError)
     } else {
-      await this.movieService.deleteRatedMovie(id)
-      localStorage.removeItem(id)
+      await this.movieService.deleteRatedMovie(id).catch(this.onError)
     }
+    this.loadAllRatedMovies()
   }
 
   onTabsChange = (key) => {
@@ -89,11 +90,25 @@ class App extends Component {
 
   loadMovies(searchValue, page) {
     this.setState({ isLoading: true, isError: false, error: null })
-    this.movieService.getAllMovies(searchValue, page).then(this.onMoviesLoaded).catch(this.onError)
+    this.movieService.getMovies(searchValue, page).then(this.onMoviesLoaded).catch(this.onError)
+  }
+
+  loadAllRatedMovies() {
+    this.movieService
+      .getAllRatedMovies()
+      .then((allRatedMovies) => this.setState({ allRatedMovies }))
+      .catch(this.onError)
+  }
+
+  loadMovieGenresList() {
+    this.movieService
+      .getMovieGenresList()
+      .then((genresList) => this.setState({ genresList }))
+      .catch(this.onError)
   }
 
   authentication() {
-    const guestID = localStorage.getItem('guestID') || this.movieService.createGuestSession()
+    const guestID = localStorage.getItem('guestID') || this.movieService.createGuestSession().catch(this.onError)
 
     return guestID
   }
@@ -111,6 +126,7 @@ class App extends Component {
       moviesRated,
       totalMoviesRated,
       currentPageRated,
+      allRatedMovies,
     } = this.state
 
     const conditions = {
@@ -127,11 +143,11 @@ class App extends Component {
           <ListMovies
             movies={movies}
             totalMovies={totalMovies}
+            allRatedMovies={allRatedMovies}
             pagination={this.pagination}
             searchValue={searchValue}
             currentPage={currentPage}
             onRateChange={this.onRateChange}
-            getLocalRating={this.movieService.getLocalRating}
           />
         )}
       </>
@@ -141,11 +157,11 @@ class App extends Component {
       <ListMovies
         movies={moviesRated}
         totalMovies={totalMoviesRated}
+        allRatedMovies={allRatedMovies}
         pagination={this.paginationRated}
         searchValue={searchValue}
         currentPage={currentPageRated}
         onRateChange={this.onRateChange}
-        getLocalRating={this.movieService.getLocalRating}
       />
     )
 
